@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, MapPin, FileText, AlertTriangle, Menu, X, ChevronRight, Phone, Clock, User } from 'lucide-react';
+import { Shield, MapPin, FileText, AlertTriangle, Menu, X, ChevronRight, Phone, Clock, User, Settings as SettingsIcon, Crown } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 import NavBar from './components/NavBar';
 import Button from './components/Button';
 import Card from './components/Card';
@@ -8,14 +9,34 @@ import ScriptsSection from './components/ScriptsSection';
 import LegalCheatSheet from './components/LegalCheatSheet';
 import IncidentRecorder from './components/IncidentRecorder';
 import EmergencyAlert from './components/EmergencyAlert';
+import SubscriptionManager from './components/SubscriptionManager';
+import Settings from './components/Settings';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useStore } from './store/useStore';
 
 function App() {
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [user, setUser] = useLocalStorage('guardian-user', null);
+  const { 
+    user, 
+    setUser, 
+    activeSection, 
+    setActiveSection, 
+    isLoading, 
+    error,
+    clearError,
+    loadSubscription,
+    loadIncidents
+  } = useStore();
   const [showOnboarding, setShowOnboarding] = useState(!user);
   const { location, error: locationError } = useGeolocation();
+
+  // Load user data on app start
+  useEffect(() => {
+    if (user) {
+      loadSubscription();
+      loadIncidents();
+    }
+  }, [user, loadSubscription, loadIncidents]);
 
   // Mock user creation for demo
   const handleOnboardingComplete = (userData) => {
@@ -51,6 +72,20 @@ function App() {
       description: 'One-tap help notification',
       icon: Phone,
       color: 'bg-red-500'
+    },
+    {
+      id: 'subscription',
+      title: 'Subscription',
+      description: 'Manage your plan and billing',
+      icon: Crown,
+      color: 'bg-purple-500'
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      description: 'Account and app preferences',
+      icon: SettingsIcon,
+      color: 'bg-gray-500'
     }
   ];
 
@@ -64,6 +99,10 @@ function App() {
         return <IncidentRecorder userId={user?.userId} />;
       case 'emergency':
         return <EmergencyAlert user={user} location={location} />;
+      case 'subscription':
+        return <SubscriptionManager />;
+      case 'settings':
+        return <Settings />;
       default:
         return (
           <div className="space-y-6">
@@ -156,6 +195,21 @@ function App() {
       <Modal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)}>
         <OnboardingFlow onComplete={handleOnboardingComplete} />
       </Modal>
+
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'hsl(0, 0%, 100%)',
+            color: 'hsl(210, 30%, 20%)',
+            border: '1px solid hsl(210, 20%, 90%)',
+            borderRadius: '10px',
+            boxShadow: '0 8px 24px hsla(210, 50%, 20%, 0.12)'
+          }
+        }}
+      />
     </div>
   );
 }
